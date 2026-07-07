@@ -1,4 +1,7 @@
-data/
 __pycache__/
 *.pyc
 .venv/
+scripts/*.html
+*.md
+/.claude
+/docs

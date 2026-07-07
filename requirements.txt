@@ -1,6 +1,12 @@
-requests
-beautifulsoup4
-pandas
+# Stage 1 (collect.py): scrape B2BMap
+requests==2.31.0
+beautifulsoup4==4.12.2
+lxml==4.9.3
 
-pytest
-flake8
+# Stage 2 (enrich.py): scrape Google Maps
+# After installing, also run: python -m playwright install chromium
+playwright==1.48.0
+
+# Dev / tests
+pytest==7.4.3
+flake8==6.1.0
