@@ -257,3 +257,78 @@ You meet in the middle where endpoints enqueue tasks and tasks write to the DB.
 ## When you get stuck
 
 This project is yours to own. Read the FastAPI / SQLAlchemy / Celery docs — they're excellent — search the error, and try a smaller reproduction first. Talk to each other before escalating; two backend devs means someone probably already hit it. The goal is for you to solve it. That's the whole point of owning it.
+
+---
+
+# Abdelhamid's edit
+
+The section above describes the originally planned FastAPI/Postgres/Celery service. What actually shipped is a much smaller Python pipeline that produces the same deliverable (a ranked CSV a human can act on) without the service layer. Everything below reflects the code that's actually in this repo.
+
+## What it does
+
+```
+  Collect        ─▶     Enrich          ─▶     Rank
+ (B2BMap)              (Google Maps)           (sort + split by category)
+ raw_suppliers.csv     enriched_suppliers.csv  ranked/<category>.csv
+```
+
+- **`collect.py`** — scrapes [B2BMap Morocco](https://b2bmap.com/morocco/companies) with `requests` + BeautifulSoup, ~20 suppliers per page. Writes `data/raw_suppliers.csv`.
+- **`enrich.py`** — for each supplier, searches Google Maps with headless Chromium (Playwright) and back-fills `website`, `contact` (phone), and `score` (star rating) from the first place-panel result. Writes `data/enriched_suppliers.csv`.
+- **`rank.py`** — sorts by `score` descending and splits into `data/ranked/all.csv` plus one file per category.
+- **`run_all.py`** — orchestrator: runs the three stages in order.
+
+The 8-column schema (`name`, `category`, `location`, `website`, `contact`, `price_signal`, `source`, `score`) is set in Stage 1 and never widened — later stages only fill in blanks.
+
+## How to run
+
+```bash
+pip install -r requirements.txt
+python -m playwright install chromium   # one-time, for Stage 2
+
+python run_all.py                       # end-to-end
+# or run individual stages:
+python collect.py
+python enrich.py
+python rank.py
+```
+
+Output lands in `data/`. The final ranked CSVs are `data/ranked/all.csv` and `data/ranked/<category>.csv`.
+
+Google Maps enrichment takes ~3 seconds per row (deliberate delay) so the full 55-supplier run is ~3 minutes.
+
+## Tests
+
+```bash
+pytest -q
+```
+
+Tests under `tests/` cover the pure logic — `collect.parse()` on synthetic HTML, `rank.slug()` and `rank.sort_key()`. Playwright-driven scraping is not unit-tested since it needs a live browser.
+
+## Continuous integration
+
+`.github/workflows/ci.yml` runs on every push to `master` and every pull request, in two jobs:
+
+- **`lint-and-test`** — installs deps, runs `flake8` on the pipeline scripts, runs `pytest`.
+- **`pipeline`** — depends on lint-and-test passing, 20-minute timeout. Installs Chromium, runs `python run_all.py` end-to-end (real B2BMap + Google Maps requests), then uploads the whole `data/` folder as a `pipeline-output` artifact you can download from the workflow run.
+
+The pipeline job hits real websites on every push, so it's slow and will break the day either site changes its HTML. Google Maps may serve CAPTCHAs to GitHub-runner IPs — if enrichment starts returning empty scores, that's the first thing to check.
+
+## Repo layout
+
+```
+collect.py        Stage 1 — B2BMap scraper
+enrich.py         Stage 2 — Google Maps enrichment
+rank.py           Stage 3 — sort + split by category
+run_all.py        Orchestrator
+requirements.txt
+tests/            pytest suite
+docs/context.md   Full project brief
+data/             Generated CSVs (gitignored)
+.github/workflows/ci.yml
+```
+
+## Ground rules (what's actually enforced)
+
+- Public data only — respect each site's `robots.txt` and terms of use.
+- Politeness delays: 2s between B2BMap pages, 3s between Google Maps lookups.
+- The tool drafts nothing and sends nothing — a human reviews `data/ranked/*.csv` and reaches out manually.
