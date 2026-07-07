@@ -6,7 +6,7 @@ on:
   pull_request:
 
 jobs:
-  lint-and-import:
+  lint-and-test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -22,9 +22,6 @@ jobs:
       - name: Lint (flake8)
         run: flake8 --max-line-length=100 --extend-ignore=E501 collect.py enrich.py rank.py run_all.py
 
-      - name: Import check
-        run: python -c "import collect, enrich, rank, run_all; print('all modules import OK')"
-
       - name: Run tests
         shell: bash
         run: |
@@ -34,3 +31,31 @@ jobs:
           # exit 5 = no tests collected; treat as pass until real tests exist
           if [ $code -eq 5 ]; then exit 0; fi
           exit $code
+
+  pipeline:
+    runs-on: ubuntu-latest
+    needs: lint-and-test
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Install Chromium for Playwright
+        run: python -m playwright install --with-deps chromium
+
+      - name: Run pipeline
+        run: python run_all.py
+
+      - name: Upload data artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pipeline-output
+          path: data/
