@@ -1,16 +1,3 @@
-"""
-Stage 1 of the supplier-discovery pipeline.
-
-Scrapes supplier listings from https://b2bmap.com/morocco/companies (paginated
-with `?page=N`) and writes them to `data/raw_suppliers.csv`.
-
-Each listing card (`li.member-item`) yields one row with:
-    name, category, location, source          -- filled here
-    website, contact, price_signal, score     -- left empty for later stages
-
-Change `pages=N` at the bottom to scrape more pages (each page ≈ 20 suppliers).
-"""
-
 import csv
 import time
 from pathlib import Path

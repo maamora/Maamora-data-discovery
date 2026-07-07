@@ -1,26 +1,3 @@
-"""
-Stage 2 of the supplier-discovery pipeline.
-
-Reads `data/raw_suppliers.csv`, and for each supplier searches Google Maps for
-`"{name} {location}"` in headless Chromium (Playwright). If a matching place
-panel opens, it back-fills:
-    score    <- star rating (as a string, e.g. "4.5")
-    website  <- link on the panel (only if empty)
-    contact  <- phone number (only if empty)
-
-Writes `data/enriched_suppliers.csv` with the same schema — no new columns.
-Rows that Maps can't resolve are kept as-is (empty fields, not dropped).
-A 3-second sleep between lookups keeps the request rate polite.
-
-Setup once:
-    pip install -r requirements.txt
-    python -m playwright install chromium
-
-Note: Google Maps' DOM changes often. If a whole run comes back empty, the
-selectors in `extract()` — `div.F7nice`, `a[data-item-id="authority"]`,
-`button[data-item-id^="phone:tel:"]` — are the first thing to check.
-"""
-
 import csv
 import re
 import time

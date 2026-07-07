@@ -26,4 +26,11 @@ jobs:
         run: python -c "import collect, enrich, rank, run_all; print('all modules import OK')"
 
       - name: Run tests
-        run: pytest -q
+        shell: bash
+        run: |
+          set +e
+          pytest -q
+          code=$?
+          # exit 5 = no tests collected; treat as pass until real tests exist
+          if [ $code -eq 5 ]; then exit 0; fi
+          exit $code

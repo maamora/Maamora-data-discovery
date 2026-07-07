@@ -1,16 +1,3 @@
-"""
-Stage 3 of the supplier-discovery pipeline.
-
-Reads `data/enriched_suppliers.csv`, sorts by `score` descending, and writes:
-    data/ranked/all.csv          -- every supplier, ranked
-    data/ranked/<category>.csv   -- one file per B2BMap category, ranked
-
-Rows with an empty or non-numeric `score` sink to the bottom of every table.
-Category filenames are slugified: lowercased, non-word chars stripped,
-spaces/hyphens collapsed to `_` (e.g. "Machinery & Industrial Supplies" ->
-`machinery_industrial_supplies.csv`).
-"""
-
 import csv
 import re
 from collections import defaultdict
