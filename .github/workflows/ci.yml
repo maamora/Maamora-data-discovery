@@ -20,7 +20,7 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Lint (flake8)
-        run: flake8 --max-line-length=100 --extend-ignore=E501 collect.py contact_info_collect.py enrich.py rank.py run_all.py
+        run: flake8 --max-line-length=100 --extend-ignore=E501 collect.py contact_info_collect.py enrich.py rank.py run_all.py db.py
 
       - name: Run tests
         shell: bash
@@ -36,6 +36,22 @@ jobs:
     runs-on: ubuntu-latest
     needs: lint-and-test
     timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: suppliers
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d suppliers"
+          --health-interval 3s
+          --health-timeout 3s
+          --health-retries 20
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/suppliers
     steps:
       - uses: actions/checkout@v4
 
@@ -53,9 +69,15 @@ jobs:
       - name: Run pipeline
         run: python run_all.py
 
-      - name: Upload data artifact
+      - name: Dump database
+        if: always()
+        env:
+          PGPASSWORD: postgres
+        run: pg_dump -h localhost -U postgres suppliers > suppliers.sql
+
+      - name: Upload DB dump
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: pipeline-output
-          path: data/
+          name: suppliers-db-dump
+          path: suppliers.sql

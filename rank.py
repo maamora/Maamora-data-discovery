@@ -1,48 +1,44 @@
-import csv
-import re
-from collections import defaultdict
-from pathlib import Path
-
-INPUT = Path("data/enriched_suppliers.csv")
-OUTPUT_DIR = Path("data/ranked")
-
-
-def sort_key(row):
-    try:
-        return -float(row.get("score") or 0)
-    except ValueError:
-        return 0.0
-
-
-def slug(category):
-    s = re.sub(r"[^\w\s-]", "", category).strip().lower()
-    return re.sub(r"[\s-]+", "_", s) or "uncategorised"
-
-
-def write_csv(path, fields, rows):
-    with path.open("w", newline="", encoding="utf-8") as f:
-        w = csv.DictWriter(f, fieldnames=fields)
-        w.writeheader()
-        w.writerows(rows)
+from db import connect, init_schema
 
 
 def main():
-    rows = list(csv.DictReader(INPUT.open(encoding="utf-8")))
-    fields = list(rows[0].keys())
-    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    init_schema()
+    with connect() as c:
+        with c.cursor() as cur:
+            cur.execute(
+                "SELECT name, category, score FROM ranked_suppliers LIMIT 10"
+            )
+            top = cur.fetchall()
+            print("Top 10 overall:")
+            for row in top:
+                score = row["score"] or "-"
+                print(f"  [{score:>4}] {row['name']} ({row['category'] or 'n/a'})")
 
-    rows.sort(key=sort_key)
-    write_csv(OUTPUT_DIR / "all.csv", fields, rows)
-    print(f"all: {len(rows)} -> {OUTPUT_DIR / 'all.csv'}")
-
-    by_category = defaultdict(list)
-    for row in rows:
-        by_category[row.get("category") or "Uncategorised"].append(row)
-
-    for category, items in by_category.items():
-        path = OUTPUT_DIR / f"{slug(category)}.csv"
-        write_csv(path, fields, items)
-        print(f"{category}: {len(items)} -> {path}")
+            cur.execute(
+                """
+                SELECT category, name, score
+                FROM (
+                    SELECT category, name, score,
+                           ROW_NUMBER() OVER (
+                               PARTITION BY category
+                               ORDER BY NULLIF(score,'')::float DESC NULLS LAST
+                           ) AS rn
+                    FROM suppliers
+                    WHERE category IS NOT NULL AND category <> ''
+                ) t
+                WHERE rn <= 3
+                ORDER BY category, rn
+                """
+            )
+            rows = cur.fetchall()
+            current = None
+            print("\nTop 3 per category:")
+            for row in rows:
+                if row["category"] != current:
+                    current = row["category"]
+                    print(f"\n  {current}")
+                score = row["score"] or "-"
+                print(f"    [{score:>4}] {row['name']}")
 
 
 if __name__ == "__main__":

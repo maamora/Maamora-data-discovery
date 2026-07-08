@@ -1,31 +1,11 @@
-"""
-Stage 1b of the supplier-discovery pipeline.
-
-Reads `data/raw_suppliers.csv`, and for each supplier appends `/contact-info`
-to its `b2bmap_url` and scrapes the resulting page. Writes one row per
-supplier to `data/contacts.csv` with:
-
-    name, contact_person, phone, whatsapp, address,
-    zip_code, state, city, country, b2bmap_url
-
-The parser is line-based rather than assuming a `<table>` layout — it works
-whether B2BMap uses `<table>`, `<dl>`, or plain divs, as long as each label
-appears near its value in the rendered text. Missing fields stay empty
-rather than failing the row.
-
-Runs before `enrich.py`. Uses only `requests` + BeautifulSoup — no browser.
-"""
-
-import csv
 import re
 import time
-from pathlib import Path
 
 import requests
 from bs4 import BeautifulSoup
 
-INPUT = Path("data/raw_suppliers.csv")
-OUTPUT = Path("data/contacts.csv")
+from db import connect, init_schema
+
 DELAY = 1
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -44,19 +24,12 @@ CONTACT_LABELS = {
     "city": "city",
     "country": "country",
 }
-FIELDS = ["name", "contact_person", "phone", "whatsapp",
-          "address", "zip_code", "state", "city", "country",
-          "b2bmap_url"]
+COLS = ["contact_person", "phone", "whatsapp", "address",
+        "zip_code", "state", "city", "country"]
 
 
 def parse_contact_info(html):
-    """
-    Extract labelled fields from a B2BMap contact-info page.
-
-    Works with any HTML layout — scans the rendered text line by line and
-    for each known label picks either the value on the same line after
-    "Label:" or the next non-empty line if the label is alone.
-    """
+    """Extract labelled fields from a B2BMap contact-info page (layout-agnostic)."""
     soup = BeautifulSoup(html, "lxml")
     lines = [ln.strip() for ln in soup.get_text("\n").splitlines() if ln.strip()]
     data = {}
@@ -89,24 +62,45 @@ def fetch_contact_info(b2bmap_url):
 
 
 def main():
-    rows = list(csv.DictReader(INPUT.open(encoding="utf-8")))
-    contacts = []
-    for i, row in enumerate(rows, 1):
-        info = fetch_contact_info(row.get("b2bmap_url", ""))
-        contact = {"name": row["name"], "b2bmap_url": row.get("b2bmap_url", "")}
-        contact.update(info)
-        contacts.append(contact)
-        print(f"[{i}/{len(rows)}] {row['name']}: "
-              f"tel={contact.get('phone', '-') or '-'} | "
-              f"wa={contact.get('whatsapp', '-') or '-'}")
-        time.sleep(DELAY)
+    init_schema()
+    with connect() as c:
+        with c.cursor() as cur:
+            cur.execute("SELECT id, name, b2bmap_url FROM suppliers ORDER BY id")
+            suppliers = cur.fetchall()
 
-    OUTPUT.parent.mkdir(parents=True, exist_ok=True)
-    with OUTPUT.open("w", newline="", encoding="utf-8") as f:
-        w = csv.DictWriter(f, fieldnames=FIELDS, extrasaction="ignore")
-        w.writeheader()
-        w.writerows(contacts)
-    print(f"Saved {len(contacts)} contact rows to {OUTPUT}")
+        for i, s in enumerate(suppliers, 1):
+            info = fetch_contact_info(s["b2bmap_url"])
+            params = {"supplier_id": s["id"]}
+            for col in COLS:
+                params[col] = info.get(col) or None
+
+            with c.cursor() as cur:
+                cur.execute(
+                    """
+                    INSERT INTO contacts
+                        (supplier_id, contact_person, phone, whatsapp, address,
+                         zip_code, state, city, country)
+                    VALUES
+                        (%(supplier_id)s, %(contact_person)s, %(phone)s, %(whatsapp)s,
+                         %(address)s, %(zip_code)s, %(state)s, %(city)s, %(country)s)
+                    ON CONFLICT (supplier_id) DO UPDATE SET
+                        contact_person = EXCLUDED.contact_person,
+                        phone          = EXCLUDED.phone,
+                        whatsapp       = EXCLUDED.whatsapp,
+                        address        = EXCLUDED.address,
+                        zip_code       = EXCLUDED.zip_code,
+                        state          = EXCLUDED.state,
+                        city           = EXCLUDED.city,
+                        country        = EXCLUDED.country
+                    """,
+                    params,
+                )
+            c.commit()
+            print(f"[{i}/{len(suppliers)}] {s['name']}: "
+                  f"tel={params.get('phone') or '-'} | "
+                  f"wa={params.get('whatsapp') or '-'}")
+            time.sleep(DELAY)
+    print(f"Upserted contacts for {len(suppliers)} suppliers")
 
 
 if __name__ == "__main__":

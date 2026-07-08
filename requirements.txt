@@ -7,6 +7,9 @@ lxml==4.9.3
 # After installing, also run: python -m playwright install chromium
 playwright==1.48.0
 
+# Storage: Postgres
+psycopg[binary]==3.2.3
+
 # Dev / tests
 pytest==7.4.3
 flake8==6.1.0

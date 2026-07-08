@@ -1,9 +1,9 @@
-import csv
 import time
-from pathlib import Path
 
 import requests
 from bs4 import BeautifulSoup
+
+from db import connect, init_schema
 
 URL = "https://b2bmap.com/morocco/companies"
 HEADERS = {
@@ -13,7 +13,6 @@ HEADERS = {
     "Accept-Language": "en-US,en;q=0.9",
 }
 DELAY = 2
-OUTPUT = Path("data/raw_suppliers.csv")
 FIELDS = ["name", "category", "location", "website", "contact",
           "price_signal", "source", "score", "b2bmap_url"]
 
@@ -51,7 +50,7 @@ def parse(html):
             "contact": "",
             "price_signal": "",
             "source": "b2bmap.com",
-            "score": 0,
+            "score": "",
             "b2bmap_url": href,
         }
 
@@ -65,12 +64,28 @@ def scrape(pages=1):
 
 
 def save(rows):
-    OUTPUT.parent.mkdir(parents=True, exist_ok=True)
-    with OUTPUT.open("w", newline="", encoding="utf-8") as f:
-        w = csv.DictWriter(f, fieldnames=FIELDS)
-        w.writeheader()
-        w.writerows(rows)
-    print(f"Saved {len(rows)} suppliers to {OUTPUT}")
+    """Insert scraped rows into the suppliers table (idempotent on b2bmap_url)."""
+    init_schema()
+    inserted = 0
+    with connect() as c:
+        with c.cursor() as cur:
+            for row in rows:
+                cur.execute(
+                    """
+                    INSERT INTO suppliers
+                        (name, category, location, website, contact,
+                         price_signal, source, score, b2bmap_url)
+                    VALUES
+                        (%(name)s, %(category)s, %(location)s, %(website)s,
+                         %(contact)s, %(price_signal)s, %(source)s, %(score)s,
+                         %(b2bmap_url)s)
+                    ON CONFLICT (b2bmap_url) DO NOTHING
+                    """,
+                    row,
+                )
+                inserted += cur.rowcount
+        c.commit()
+    print(f"Inserted {inserted}/{len(rows)} suppliers into DB (dupes skipped)")
 
 
 if __name__ == "__main__":
