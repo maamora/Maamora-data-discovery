@@ -1,4 +1,4 @@
-name,category,location,website,contact,price_signal,source,score
-PimaAfrica Distribution Sarl AU,Machinery & Industrial Supplies,"ad-Dar-al-Bayda, Casablanca",http://www.platinova.ma/,0522674424,,b2bmap.com,4.4
-PROMASTEEL,Machinery & Industrial Supplies,"Fas, Fes-Boulemane",,,,b2bmap.com,0
-Import Export Panafric,Machinery & Industrial Supplies,,,,,b2bmap.com,0
+name,category,location,website,contact,price_signal,source,score,b2bmap_url
+PROMASTEEL,Machinery & Industrial Supplies,"Fas, Fes-Boulemane",https://www.acierpromaroc.com/,0661754248,,b2bmap.com,5.0,https://b2bmap.com/promasteel
+PimaAfrica Distribution Sarl AU,Machinery & Industrial Supplies,"ad-Dar-al-Bayda, Casablanca",http://www.promagri.ma/,0522335059,,b2bmap.com,4.1,https://b2bmap.com/pimaafrica-distribution
+Import Export Panafric,Machinery & Industrial Supplies,,http://www.safari.ma/,0537772714,,b2bmap.com,2.0,https://b2bmap.com/company-10497

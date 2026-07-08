@@ -1,14 +1,14 @@
-name,category,location,website,contact,price_signal,source,score
-Salice Cosmetics Labs,Health & Medical,"Agadir, Agadir",https://salicecosmeticslabs.com/,0698616798,,b2bmap.com,5.0
-Marganom,Health & Medical,Marrakech-Tensift-Al Haouz,https://marganom.com/,0663537766,,b2bmap.com,5.0
-Bioprogreen,Health & Medical,Marrakech-Tensift-Al Haouz,https://www.bioprogreen.com/,0522023136,,b2bmap.com,5.0
-Jood Cosmetic,Health & Medical,Souss Massa-Draa,,0679544035,,b2bmap.com,5.0
-Organica Group LTD,Health & Medical,Marrakech-Tensift-Al Haouz,https://www.moroccanorganica.com/,0648273228,,b2bmap.com,4.9
-Argan Oil Wholesale Company,Health & Medical,Marrakech-Tensift-Al Haouz,https://www.moroccanorganica.com/,0648273228,,b2bmap.com,4.9
-ORIENTAL GROUP,Health & Medical,Marrakech-Tensift-Al Haouz,https://www.moroccanorganica.com/,0648273228,,b2bmap.com,4.9
-Oriental Group,Health & Medical,Marrakech-Tensift-Al Haouz,https://www.moroccanorganica.com/,0648273228,,b2bmap.com,4.9
-Oriental Group,Health & Medical,Marrakech-Tensift-Al Haouz,https://www.moroccanorganica.com/,0648273228,,b2bmap.com,4.9
-Organica Group Sarl,Health & Medical,Marrakech-Tensift-Al Haouz,https://www.moroccanorganica.com/,0648273228,,b2bmap.com,4.9
-Paraceutica,Health & Medical,Marrakech-Tensift-Al Haouz,,0661248432,,b2bmap.com,4.6
-Cosmeticlab Laboratoire,Health & Medical,Marrakech-Tensift-Al Haouz,https://cosmetiklab-laboratoires.com/,0525361515,,b2bmap.com,4.0
-Moroccan Organic Products LTD,Health & Medical,Marrakech-Tensift-Al Haouz,https://www.moroccanorganicproducts.com/,0680866840,,b2bmap.com,4.0
+name,category,location,website,contact,price_signal,source,score,b2bmap_url
+Salice Cosmetics Labs,Health & Medical,"Agadir, Agadir",https://salicecosmeticslabs.com/,0698616798,,b2bmap.com,5.0,https://b2bmap.com/salice-cosmetics-labs
+Argan Oil Wholesale Company,Health & Medical,Marrakech-Tensift-Al Haouz,https://www.moroccanlab.com/,0660898837,,b2bmap.com,5.0,https://b2bmap.com/argan-oil-wholesale-company
+Marganom,Health & Medical,Marrakech-Tensift-Al Haouz,https://marganom.com/,0663537766,,b2bmap.com,5.0,https://b2bmap.com/marganom
+Bioprogreen,Health & Medical,Marrakech-Tensift-Al Haouz,https://www.bioprogreen.com/,0522023136,,b2bmap.com,5.0,https://b2bmap.com/bioprogreen
+Jood Cosmetic,Health & Medical,Souss Massa-Draa,,0679544035,,b2bmap.com,5.0,https://b2bmap.com/jood-cosmetic
+Organica Group LTD,Health & Medical,Marrakech-Tensift-Al Haouz,https://www.moroccanorganica.com/,0648273228,,b2bmap.com,4.9,https://b2bmap.com/organica-group-ltd
+ORIENTAL GROUP,Health & Medical,Marrakech-Tensift-Al Haouz,https://www.moroccanorganica.com/,0648273228,,b2bmap.com,4.9,https://b2bmap.com/argan-oil
+Oriental Group,Health & Medical,Marrakech-Tensift-Al Haouz,https://www.moroccanorganica.com/,0648273228,,b2bmap.com,4.9,https://b2bmap.com/oriental-group-sarl-au
+Oriental Group,Health & Medical,Marrakech-Tensift-Al Haouz,https://www.moroccanorganica.com/,0648273228,,b2bmap.com,4.9,https://b2bmap.com/oriental-group
+Organica Group Sarl,Health & Medical,Marrakech-Tensift-Al Haouz,https://www.moroccanorganica.com/,0648273228,,b2bmap.com,4.9,https://b2bmap.com/organica-group-sarl
+Paraceutica,Health & Medical,Marrakech-Tensift-Al Haouz,,0661248432,,b2bmap.com,4.6,https://b2bmap.com/paraceutica
+Cosmeticlab Laboratoire,Health & Medical,Marrakech-Tensift-Al Haouz,https://cosmetiklab-laboratoires.com/,0525361515,,b2bmap.com,4.0,https://b2bmap.com/cosmeticlab-laboratoire
+Moroccan Organic Products LTD,Health & Medical,Marrakech-Tensift-Al Haouz,https://www.moroccanorganicproducts.com/,0680866840,,b2bmap.com,4.0,https://b2bmap.com/moroccan-organic-products

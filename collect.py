@@ -15,7 +15,7 @@ HEADERS = {
 DELAY = 2
 OUTPUT = Path("data/raw_suppliers.csv")
 FIELDS = ["name", "category", "location", "website", "contact",
-          "price_signal", "source", "score"]
+          "price_signal", "source", "score", "b2bmap_url"]
 
 
 def fetch(page):
@@ -32,6 +32,10 @@ def parse(html):
         name = card.select_one("a.directory-link span")
         if not name:
             continue
+        link = card.select_one("a.directory-link")
+        href = link.get("href", "") if link else ""
+        if href and href.startswith("/"):
+            href = f"https://b2bmap.com{href}"
         category = ""
         for div in card.select("div.mb-1"):
             if "Business Category" in div.get_text():
@@ -48,6 +52,7 @@ def parse(html):
             "price_signal": "",
             "source": "b2bmap.com",
             "score": 0,
+            "b2bmap_url": href,
         }
 
 

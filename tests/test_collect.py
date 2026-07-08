@@ -41,3 +41,9 @@ def test_parse_rows_match_full_schema():
         assert r["source"] == "b2bmap.com"
         assert r["website"] == ""
         assert r["contact"] == ""
+
+
+def test_parse_captures_profile_url_absolute():
+    rows = list(parse(SAMPLE_HTML))
+    assert rows[0]["b2bmap_url"] == "https://b2bmap.com/x"
+    assert rows[1]["b2bmap_url"] == "https://b2bmap.com/y"

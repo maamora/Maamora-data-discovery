@@ -1,4 +1,4 @@
-name,category,location,website,contact,price_signal,source,score
-Gold Cheese Morocco,Food & Beverage,"ad-Dar-al-Bayda, Casablanca",https://goldcheesemorocco.com/,0522961471,,b2bmap.com,5.0
-Moroccan Sardine,Food & Beverage,Marrakech-Tensift-Al Haouz,,,,b2bmap.com,5.0
-GATÔ,Food & Beverage,Marrakech-Tensift-Al Haouz,https://www.patisseriegato.ma/,0661303921,,b2bmap.com,4.5
+name,category,location,website,contact,price_signal,source,score,b2bmap_url
+Gold Cheese Morocco,Food & Beverage,"ad-Dar-al-Bayda, Casablanca",https://goldcheesemorocco.com/,0522961471,,b2bmap.com,5.0,https://b2bmap.com/gold-cheese-morocco
+Moroccan Sardine,Food & Beverage,Marrakech-Tensift-Al Haouz,,,,b2bmap.com,5.0,https://b2bmap.com/moroccan-sardine
+GATÔ,Food & Beverage,Marrakech-Tensift-Al Haouz,https://www.patisseriegato.ma/,0661303921,,b2bmap.com,4.5,https://b2bmap.com/gato
