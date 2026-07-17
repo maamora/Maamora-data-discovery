@@ -1,3 +1,4 @@
+import random
 import re
 import time
 
@@ -6,7 +7,8 @@ from bs4 import BeautifulSoup
 
 from db import connect, init_schema
 
-DELAY = 1
+DELAY_RANGE = (1, 2)  # CHANGED: randomized instead of a fixed 1s -- a fixed
+# delay is an easy pattern for anti-bot systems to fingerprint at volume.
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
                   "AppleWebKit/537.36 (KHTML, like Gecko) "
@@ -18,14 +20,18 @@ CONTACT_LABELS = {
     "contact person": "contact_person",
     "phone": "phone",
     "whatsapp": "whatsapp",
+    "email": "email",  # CHANGED: added -- this is the field the internship
+    "e-mail": "email",  # supervisor asked for.
     "address": "address",
     "zip code": "zip_code",
     "state": "state",
     "city": "city",
     "country": "country",
 }
-COLS = ["contact_person", "phone", "whatsapp", "address",
+COLS = ["contact_person", "phone", "whatsapp", "email", "address",
         "zip_code", "state", "city", "country"]
+
+EMAIL_RE = re.compile(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}")
 
 
 def parse_contact_info(html):
@@ -43,6 +49,21 @@ def parse_contact_info(html):
             label = m.group(1).strip().lower()
             if label in CONTACT_LABELS:
                 data[CONTACT_LABELS[label]] = m.group(2).strip()
+
+    # CHANGED: fallback email extraction. Contact-info pages often don't
+    # label the email explicitly (or show it as a mailto: link / inside a
+    # "protected" span), so if the labelled scan above didn't find one,
+    # fall back to (a) any mailto: href, then (b) a regex scan of the
+    # visible text.
+    if not data.get("email"):
+        mailto = soup.select_one('a[href^="mailto:"]')
+        if mailto:
+            data["email"] = mailto.get("href", "").replace("mailto:", "").split("?")[0].strip()
+    if not data.get("email"):
+        m = EMAIL_RE.search(soup.get_text(" "))
+        if m:
+            data["email"] = m.group(0)
+
     return data
 
 
@@ -61,15 +82,43 @@ def fetch_contact_info(b2bmap_url):
     return parse_contact_info(r.text)
 
 
-def main():
+def main(resume=True):
+    """
+    resume=True (default, CHANGED): only process suppliers that don't
+    already have a contacts row with an email filled in. This is the fix
+    for the "re-scrapes everything on every run" issue -- at ~1000 rows,
+    a crash/CAPTCHA partway through used to mean starting over from zero.
+    Pass resume=False to force a full re-run (e.g. after fixing a parsing
+    bug you want to re-apply to already-processed rows).
+    """
     init_schema()
     with connect() as c:
         with c.cursor() as cur:
-            cur.execute("SELECT id, name, b2bmap_url FROM suppliers ORDER BY id")
+            if resume:
+                cur.execute(
+                    """
+                    SELECT s.id, s.name, COALESCE(s.b2bmap_url, s.external_url) AS url
+                    FROM suppliers s
+                    LEFT JOIN contacts c ON c.supplier_id = s.id
+                    WHERE s.b2bmap_url IS NOT NULL
+                      AND (c.email IS NULL OR c.email = '')
+                    ORDER BY s.id
+                    """
+                )
+            else:
+                cur.execute(
+                    """
+                    SELECT id, name, b2bmap_url AS url FROM suppliers
+                    WHERE b2bmap_url IS NOT NULL ORDER BY id
+                    """
+                )
             suppliers = cur.fetchall()
 
+        print(f"{len(suppliers)} suppliers to process "
+              f"({'resume mode' if resume else 'full re-run'})")
+
         for i, s in enumerate(suppliers, 1):
-            info = fetch_contact_info(s["b2bmap_url"])
+            info = fetch_contact_info(s["url"])
             params = {"supplier_id": s["id"]}
             for col in COLS:
                 params[col] = info.get(col) or None
@@ -78,28 +127,30 @@ def main():
                 cur.execute(
                     """
                     INSERT INTO contacts
-                        (supplier_id, contact_person, phone, whatsapp, address,
-                         zip_code, state, city, country)
+                        (supplier_id, contact_person, phone, whatsapp, email,
+                         address, zip_code, state, city, country)
                     VALUES
                         (%(supplier_id)s, %(contact_person)s, %(phone)s, %(whatsapp)s,
-                         %(address)s, %(zip_code)s, %(state)s, %(city)s, %(country)s)
+                         %(email)s, %(address)s, %(zip_code)s, %(state)s, %(city)s,
+                         %(country)s)
                     ON CONFLICT (supplier_id) DO UPDATE SET
-                        contact_person = EXCLUDED.contact_person,
-                        phone          = EXCLUDED.phone,
-                        whatsapp       = EXCLUDED.whatsapp,
-                        address        = EXCLUDED.address,
-                        zip_code       = EXCLUDED.zip_code,
-                        state          = EXCLUDED.state,
-                        city           = EXCLUDED.city,
-                        country        = EXCLUDED.country
+                        contact_person = COALESCE(EXCLUDED.contact_person, contacts.contact_person),
+                        phone          = COALESCE(EXCLUDED.phone, contacts.phone),
+                        whatsapp       = COALESCE(EXCLUDED.whatsapp, contacts.whatsapp),
+                        email          = COALESCE(EXCLUDED.email, contacts.email),
+                        address        = COALESCE(EXCLUDED.address, contacts.address),
+                        zip_code       = COALESCE(EXCLUDED.zip_code, contacts.zip_code),
+                        state          = COALESCE(EXCLUDED.state, contacts.state),
+                        city           = COALESCE(EXCLUDED.city, contacts.city),
+                        country        = COALESCE(EXCLUDED.country, contacts.country)
                     """,
                     params,
                 )
             c.commit()
             print(f"[{i}/{len(suppliers)}] {s['name']}: "
                   f"tel={params.get('phone') or '-'} | "
-                  f"wa={params.get('whatsapp') or '-'}")
-            time.sleep(DELAY)
+                  f"email={params.get('email') or '-'}")
+            time.sleep(random.uniform(*DELAY_RANGE))
     print(f"Upserted contacts for {len(suppliers)} suppliers")
 
 
