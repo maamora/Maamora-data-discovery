@@ -1,11 +1,7 @@
-# Stage 1 (collect.py, kerix_collect.py): scrape B2BMap + Kerix
+# Stage 1 (collect.py): scrape B2BMap
 requests==2.31.0
 beautifulsoup4==4.12.2
-# CHANGED: bumped from 4.9.3 -- that version has no precompiled wheel for
-# Python 3.13 on Windows, which forces pip to compile from source and
-# fail with "Microsoft Visual C++ 14.0 or greater is required". 5.3+ has
-# prebuilt wheels for 3.13 on Windows/Mac/Linux, no compiler needed.
-lxml>=5.3.0
+lxml==4.9.3
 
 # Stage 2 (enrich.py): scrape Google Maps
 # After installing, also run: python -m playwright install chromium
