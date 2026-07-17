@@ -92,6 +92,14 @@ def parse_general(html, fallback_category=""):
         }
 
 
+# CHANGED: backward-compat alias -- the original function here was named
+# `parse` (imported directly as `from collect import parse` by
+# tests/test_collect.py). It was renamed to parse_general to distinguish
+# it from the new parse_category(), but the test suite still expects the
+# name `parse` to exist, so keep this alias rather than breaking it.
+parse = parse_general
+
+
 def parse_category(html, category_name):
     """
     TODO VERIFY: parser for the per-category listing pages
