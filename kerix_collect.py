@@ -168,13 +168,13 @@ def parse_company_page(html, url):
     name_positions = [i for i, l in enumerate(lines) if l == name]
     end_markers = ("asking for a quote", "verified", "unverified")
     end_idx = next(
-        (i for i, l in enumerate(lines) if l.strip().lower() in end_markers), None
+        (i for i, ln in enumerate(lines) if ln.strip().lower() in end_markers), None
     )
     if len(name_positions) >= 2 and end_idx is not None:
         second_name_idx = name_positions[1]
         if end_idx > second_name_idx:
             addr_lines = [
-                l for l in lines[second_name_idx + 1:end_idx] if l != "-"
+                ln for ln in lines[second_name_idx + 1:end_idx] if ln != "-"
             ]
             if addr_lines:
                 location = ", ".join(addr_lines)

@@ -1,11 +1,12 @@
 import time
 
+# CHANGED: europages_collect removed -- blocked by robots.txt
+# (Disallow: / for generic bots)
 import collect
 import contact_info_collect
 import enrich
 import export
-import kerix_collect  # CHANGED: europages_collect removed -- blocked by
-                       # robots.txt (Disallow: / for generic bots)
+import kerix_collect
 import price_signal
 import rank
 

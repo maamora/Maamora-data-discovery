@@ -32,7 +32,7 @@ def draft_outreach(row):
     name = row.get("name") or "there"
     category = row.get("category") or "your products"
     contact_person = row.get("contact_person")
-    greeting = f"Bonjour {contact_person}," if contact_person else f"Bonjour,"
+    greeting = f"Bonjour {contact_person}," if contact_person else "Bonjour,"
     return (
         f"{greeting}\n\n"
         f"Nous avons trouvé {name} en recherchant des fournisseurs pour "
