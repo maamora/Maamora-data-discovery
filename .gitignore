@@ -3,6 +3,7 @@ __pycache__/
 .venv/
 scripts/*.html
 *.md
+!README.md
+!docs/context.md
 /.claude
-/docs
 data/
