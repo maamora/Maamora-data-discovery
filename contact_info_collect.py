@@ -33,6 +33,23 @@ COLS = ["contact_person", "phone", "whatsapp", "email", "address",
 
 EMAIL_RE = re.compile(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}")
 
+# B2BMap masks contact data for anonymous users:
+#   phone/whatsapp are served as e.g. "+212669xxxxx" (last 5 digits = literal x)
+#   email is served as "*" (single asterisk)
+# Verified July 2026 by fetching /contact-info without a session. These are
+# NOT real values — dropping them here so the DB never stores "+212661xxxxx"
+# as if it were a phone. To get real values we'd have to register + log in
+# (and re-check ToS). Address / contact_person / city / state / country are
+# NOT masked and remain useful.
+MASK_RE = re.compile(r"x{3,}", re.IGNORECASE)
+
+
+def _looks_masked(value):
+    if not value:
+        return True
+    v = value.strip()
+    return v in ("*", "-", "") or bool(MASK_RE.search(v))
+
 
 def parse_contact_info(html):
     """Extract labelled fields from a B2BMap contact-info page (layout-agnostic)."""
@@ -55,7 +72,8 @@ def parse_contact_info(html):
     # "protected" span), so if the labelled scan above didn't find one,
     # fall back to (a) any mailto: href, then (b) a regex scan of the
     # visible text.
-    if not data.get("email"):
+    if not data.get("email") or _looks_masked(data.get("email")):
+        data.pop("email", None)
         mailto = soup.select_one('a[href^="mailto:"]')
         if mailto:
             data["email"] = mailto.get("href", "").replace("mailto:", "").split("?")[0].strip()
@@ -63,6 +81,13 @@ def parse_contact_info(html):
         m = EMAIL_RE.search(soup.get_text(" "))
         if m:
             data["email"] = m.group(0)
+
+    # Drop any field whose value is B2BMap's anon-user mask (see MASK_RE
+    # comment). Do this last so the mailto/regex email fallbacks above got a
+    # chance to fill in a real value first.
+    for f in ("phone", "whatsapp", "email"):
+        if _looks_masked(data.get(f)):
+            data.pop(f, None)
 
     return data
 

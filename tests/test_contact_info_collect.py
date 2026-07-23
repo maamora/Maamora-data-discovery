@@ -69,3 +69,31 @@ def test_fetch_contact_info_returns_empty_on_http_error():
     import requests as _r
     with patch("contact_info_collect.requests.get", side_effect=_r.RequestException("boom")):
         assert fetch_contact_info("https://b2bmap.com/x") == {}
+
+
+# B2BMap masks contact fields for anonymous users. Verified in prod:
+# phone/whatsapp end in a run of literal "x"s, email is a lone "*". These
+# aren't real values and must not land in the DB.
+MASKED_HTML = """
+<html><body>
+<table>
+  <tr><td>Contact Person:</td><td>Mr. X</td></tr>
+  <tr><td>Phone:</td><td>+212669xxxxx</td></tr>
+  <tr><td>Whatsapp:</td><td>+212669xxxxx</td></tr>
+  <tr><td>Email:</td><td>*</td></tr>
+  <tr><td>Address:</td><td>293 Boulevard, Casablanca</td></tr>
+  <tr><td>City:</td><td>Casablanca</td></tr>
+</table>
+</body></html>
+"""
+
+
+def test_parse_contact_info_drops_masked_phone_whatsapp_email():
+    data = parse_contact_info(MASKED_HTML)
+    assert "phone" not in data
+    assert "whatsapp" not in data
+    assert "email" not in data
+    # Non-masked fields still come through.
+    assert data["contact_person"] == "Mr. X"
+    assert data["address"] == "293 Boulevard, Casablanca"
+    assert data["city"] == "Casablanca"

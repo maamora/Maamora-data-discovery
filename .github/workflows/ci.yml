@@ -20,7 +20,7 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Lint (flake8)
-        run: flake8 --max-line-length=100 --extend-ignore=E501 collect.py contact_info_collect.py enrich.py rank.py run_all.py db.py
+        run: flake8 --max-line-length=100 --extend-ignore=E501 collect.py contact_info_collect.py enrich.py rank.py run_all.py db.py kerix_collect.py export.py price_signal.py
 
       - name: Run tests
         shell: bash
