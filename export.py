@@ -46,7 +46,7 @@ def draft_outreach(row):
 
 FIELDNAMES = [
     "name", "category", "location", "website", "contact", "email",
-    "price_signal", "score", "review_count", "source", "b2bmap_url",
+    "price_signal", "score", "source", "b2bmap_url",
     "external_url", "outreach_draft",
 ]
 
@@ -55,7 +55,12 @@ def fetch_rows():
     init_schema()
     with connect() as c:
         with c.cursor() as cur:
-            cur.execute("SELECT * FROM ranked_suppliers")
+            # CHANGED: exclude rows marked as duplicates by dedup.py --
+            # they stay in the DB for review, but shouldn't appear
+            # twice in the final export.
+            cur.execute(
+                "SELECT * FROM ranked_suppliers WHERE duplicate_of_id IS NULL"
+            )
             return cur.fetchall()
 
 
@@ -69,7 +74,6 @@ def to_export_row(row):
         "email": row.get("email") or "",
         "price_signal": row.get("price_signal") or "",
         "score": row.get("score") or "",
-        "review_count": row.get("review_count") if row.get("review_count") is not None else "",
         "source": row.get("source") or "",
         "b2bmap_url": row.get("b2bmap_url") or "",
         "external_url": row.get("external_url") or "",

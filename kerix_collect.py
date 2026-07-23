@@ -206,10 +206,44 @@ def fetch_and_parse(url):
     return parse_company_page(r.text, url)
 
 
-def scrape(limit=2000):
+def existing_external_urls():
+    """CHANGED: resume support -- return the set of external_url values
+    already in the suppliers table, so scrape() can skip them instead of
+    re-fetching pages we already have. One query up front instead of a
+    per-URL DB check (cheap, and avoids hundreds of round-trips)."""
+    init_schema()
+    with connect() as c:
+        with c.cursor() as cur:
+            cur.execute(
+                "SELECT external_url FROM suppliers WHERE external_url IS NOT NULL"
+            )
+            return {row["external_url"] for row in cur.fetchall()}
+
+
+def scrape(limit=2000, resume=True):
+    """
+    resume=True (default, CHANGED): skip company URLs already in the DB
+    (matched on external_url) before applying `limit`, so `limit` means
+    "up to N NEW suppliers" rather than "the first N URLs in the sitemap
+    regardless of what's already scraped". This avoids re-fetching
+    hundreds of already-known pages on every re-run -- the real cost
+    here, since collect.py's B2BMap requests are a small fixed number
+    (~25 listing pages) but this fetches one page PER company.
+    Pass resume=False to force re-fetching everything (e.g. after fixing
+    a parsing bug you want to re-apply to already-scraped rows -- combine
+    with delete_by_source.py kerix.net first in that case).
+    """
     urls = fetch_sitemap_urls()
-    print(f"{len(urls)} company URLs found in sitemaps "
-          f"(taking up to {limit})")
+    if resume:
+        known = existing_external_urls()
+        before = len(urls)
+        urls = [u for u in urls if u not in known]
+        print(f"{before} company URLs in sitemaps, {len(urls)} new "
+              f"(skipping {before - len(urls)} already in DB)")
+    else:
+        print(f"{len(urls)} company URLs found in sitemaps (full re-run)")
+
+    print(f"Taking up to {limit}")
     rows = []
     for url in urls[:limit]:
         row = fetch_and_parse(url)
@@ -244,6 +278,6 @@ def save(rows):
 
 
 if __name__ == "__main__":
-    # Start small (e.g. limit=20) to spot-check the parser against real
-    # pages before committing to a 2000-row run.
-    save(scrape(limit=20))
+    # CHANGED: was limit=20 (initial spot-check phase, now validated).
+    # Raise further toward 2000+ once satisfied with data quality.
+    save(scrape(limit=2000))
